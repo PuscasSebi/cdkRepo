@@ -64,7 +64,7 @@ public class ProductServiceStack extends Stack {
         ApplicationListener applicationListener = productStack.applicationLoadBalancer()
                 .addListener("ApplicationListener", ApplicationListenerProps.builder()
                         .port(appPort)
-                        .protocol(ApplicationProtocol.HTTPS)
+                        .protocol(ApplicationProtocol.HTTP)
                         .loadBalancer(productStack.applicationLoadBalancer())
                         .build()
                 );
