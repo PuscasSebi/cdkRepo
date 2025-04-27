@@ -4,7 +4,6 @@ import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.StackProps;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -21,6 +20,12 @@ public class ECommerceEcsCdkApp {
         infraTags.put("cost", "ECommerceInfra");
 
         EcrStack ecr = new EcrStack(app, "Ecr", StackProps.builder()
+                .env(environment)
+                .tags(infraTags)
+                .build());
+
+
+        VpcStack vpc = new VpcStack(app, "Vpc", StackProps.builder()
                 .env(environment)
                 .tags(infraTags)
                 .build());
