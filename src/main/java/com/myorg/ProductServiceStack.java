@@ -110,8 +110,20 @@ public class ProductServiceStack extends Stack {
                                 .port(appPort)
                                 .protocol(Protocol.TCP)
                                 .build()
-
                 );
+        networkListener.addTargets("productServiceNlbTargets",
+                AddNetworkTargetsProps.builder()
+                        .port(appPort)
+                        .protocol(Protocol.TCP)
+                        .targetGroupName("productServiceNlb")
+                        .targets(Collections.singletonList(fargateService
+                                .loadBalancerTarget(LoadBalancerTargetOptions.builder()
+                                        .containerName("productsService")
+                                        .containerPort(appPort)
+                                        .protocol(software.amazon.awscdk.services.ecs.Protocol.TCP)
+                                        .build())
+                        ))
+                        .build());
     }
 }
 record ProductServiceStackProps(Vpc vpc, Cluster cluster,
