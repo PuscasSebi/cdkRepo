@@ -54,7 +54,7 @@ public class ProductServiceStack extends Stack {
                         .containerName("productsService")
                         .portMappings(Collections.singletonList(PortMapping.builder()
                                         .containerPort(appPort)
-                                        .protocol(Protocol.TCP)
+                                        .protocol(software.amazon.awscdk.services.ecs.Protocol.TCP)
                                 .build()))
                         .logging(logDriver)
                         .environment(environment)
@@ -104,7 +104,14 @@ public class ProductServiceStack extends Stack {
                         .build());
 
 
+        NetworkListener networkListener = productStack.networkLoadBalancer()
+                .addListener("ProductServiceNLBListener",
+                        NetworkListenerProps.builder()
+                                .port(appPort)
+                                .protocol(Protocol.TCP)
+                                .build()
 
+                );
     }
 }
 record ProductServiceStackProps(Vpc vpc, Cluster cluster,
