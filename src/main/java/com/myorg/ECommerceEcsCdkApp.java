@@ -37,6 +37,12 @@ public class ECommerceEcsCdkApp {
                 new ClusterStackProps(vpcStack.getVps()));
         cluster.addDependency(vpcStack);
 
+        NlbStack nlb = new NlbStack(app, "Nlb", StackProps.builder()
+                .env(environment)
+                .tags(infraTags)
+                .build(), new NlbStackProps(vpcStack.getVps()));
+        nlb.addDependency(vpcStack);
+
         app.synth();
     }
 }
