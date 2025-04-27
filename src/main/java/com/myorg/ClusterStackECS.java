@@ -1,5 +1,6 @@
 package com.myorg;
 
+import lombok.Getter;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
@@ -13,7 +14,7 @@ import software.amazon.awscdk.services.ecs.ContainerInsights;
 import software.constructs.Construct;
 
 public class ClusterStackECS extends Stack {
-
+    @Getter
     private final Cluster cluster;;
 
     public ClusterStackECS(Construct scope, String id, StackProps props,

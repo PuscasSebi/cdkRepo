@@ -92,12 +92,14 @@ public class ProductServiceStack extends Stack {
                         .protocol(ApplicationProtocol.HTTP)
                         .targets(Collections.singletonList(fargateService))
                         .deregistrationDelay(Duration.seconds(30))
+
                         .healthCheck(HealthCheck.builder()
                                 .enabled(true)
                                 .interval(Duration.seconds(20))
                                 .timeout(Duration.seconds(10))
                                 .path("/actuator/health")
-                                .protocol(Protocol.TCP)
+                                .protocol(Protocol.HTTP)
+
                                 .healthyHttpCodes("200")
                                 .port(String.valueOf(appPort))
                                 .build())
@@ -109,6 +111,7 @@ public class ProductServiceStack extends Stack {
                         NetworkListenerProps.builder()
                                 .port(appPort)
                                 .protocol(Protocol.TCP)
+                                .loadBalancer(productStack.networkLoadBalancer())
                                 .build()
                 );
         networkListener.addTargets("productServiceNlbTargets",

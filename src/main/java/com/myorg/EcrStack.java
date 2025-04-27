@@ -1,5 +1,6 @@
 package com.myorg;
 
+import lombok.Getter;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
@@ -11,7 +12,7 @@ import software.constructs.Construct;
 
 public class EcrStack extends Stack {
 
-
+    @Getter
     private final Repository productServiceRepository;
 
     public EcrStack(Construct scope, String id, StackProps props) {
@@ -23,10 +24,6 @@ public class EcrStack extends Stack {
                 .imageTagMutability(TagMutability.IMMUTABLE)
                 .emptyOnDelete(true)
                 .build());
-    }
-
-    public Repository getProductServiceRepository() {
-        return productServiceRepository;
     }
 
 }

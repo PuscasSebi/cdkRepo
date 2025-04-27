@@ -43,6 +43,23 @@ public class ECommerceEcsCdkApp {
                 .build(), new NlbStackProps(vpcStack.getVps()));
         nlb.addDependency(vpcStack);
 
+
+
+        Map<String,String> infraTagsService = new HashMap<>();
+        infraTags.put("team", "Puscas");
+        infraTags.put("cost", "ProductService");
+
+        ProductServiceStack productService = new ProductServiceStack(app, "ProductService", StackProps.builder()
+                .env(environment)
+                .tags(infraTagsService)
+                .build(),
+                new ProductServiceStackProps(vpcStack.getVps(), cluster.getCluster(), nlb.getNlb(), nlb.getAlb(),
+                        ecr.getProductServiceRepository()));
+        productService.addDependency(ecr);
+        productService.addDependency(nlb);
+        productService.addDependency(cluster);
+        productService.addDependency(vpcStack);
+
         app.synth();
     }
 }
