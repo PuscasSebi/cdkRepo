@@ -25,10 +25,17 @@ public class ECommerceEcsCdkApp {
                 .build());
 
 
-        VpcStack vpc = new VpcStack(app, "Vpc", StackProps.builder()
+        VpcStack vpcStack = new VpcStack(app, "Vpc", StackProps.builder()
                 .env(environment)
                 .tags(infraTags)
                 .build());
+
+        ClusterStackECS cluster = new ClusterStackECS(app, "Cluster", StackProps.builder()
+                .env(environment)
+                .tags(infraTags)
+                .build(),
+                new ClusterStackProps(vpcStack.getVps()));
+        cluster.addDependency(vpcStack);
 
         app.synth();
     }
