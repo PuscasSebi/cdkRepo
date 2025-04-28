@@ -43,6 +43,16 @@ public class ProductServiceStack extends Stack {
                         .build()
                 ); //won't be charged until usage
 
+        productDb.addGlobalSecondaryIndex(GlobalSecondaryIndexProps.builder()
+                        .indexName("codeIdx")
+                        .partitionKey(Attribute.builder()
+                                .name("code")
+                                .type(AttributeType.STRING)
+                                .build())
+                        .projectionType(ProjectionType.KEYS_ONLY)
+                        .readCapacity(1)
+                        .writeCapacity(1)
+                .build());
 
 
         FargateTaskDefinition taskDefinition = new FargateTaskDefinition(this,
@@ -77,7 +87,7 @@ public class ProductServiceStack extends Stack {
         );
         taskDefinition.addContainer("ProductServiceContainer",
                 ContainerDefinitionOptions.builder()
-                        .image(ContainerImage.fromEcrRepository(productStack.repository(), "4.0.0"))
+                        .image(ContainerImage.fromEcrRepository(productStack.repository(), "4.0.1"))
                         .containerName("productsService")
                         .portMappings(Collections.singletonList(PortMapping.builder()
                                         .containerPort(appPort)
