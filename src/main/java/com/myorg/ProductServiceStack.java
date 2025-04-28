@@ -106,7 +106,7 @@ public class ProductServiceStack extends Stack {
                                 .streamPrefix("XRayProductService")
                                 .build()))
                         .cpu(128)
-                        .cpu(128)
+                        .memoryLimitMiB(128)
                 .build());
 
         taskDefinition.getTaskRole().addManagedPolicy(ManagedPolicy.fromAwsManagedPolicyName("AWSXRayWriteOnlyAccess"));
