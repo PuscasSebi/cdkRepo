@@ -72,7 +72,8 @@ public class ProductServiceStack extends Stack {
                 "SERVER_PORT", String.valueOf(appPort),
                 "AWS_XRAY_DAEMON_ADDRESS", "0.0.0.0:2000",
                 "AWS_XRAY_CONTEXT_MISSING", "IGNORE_ERROR",
-                "AWS_XRAY_TRACING_NAME", "productservice"
+                "AWS_XRAY_TRACING_NAME", "productservice",
+                "LOGGING_LEVEL_ROOT", "INFO"
         );
         taskDefinition.addContainer("ProductServiceContainer",
                 ContainerDefinitionOptions.builder()
