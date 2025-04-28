@@ -53,6 +53,13 @@ public class ApiStack extends Stack {
     }
 
     private void createProductResource(RestApi restApi, ApiStackProps apiStackProps){
+        Map<String,String> productsIntegrationParams = new HashMap<>();
+        productsIntegrationParams.put("integration.request.path.id", "context.requestId");
+
+        Map<String, Boolean> productsMethodParams = new HashMap<>();
+        productsMethodParams.put("method.request.header.requestId", false);
+
+        //products
         Resource productsResource = restApi.getRoot().addResource("products");
 
         //GET /products
@@ -64,8 +71,12 @@ public class ApiStack extends Stack {
                         .options(IntegrationOptions.builder()
                                 .vpcLink(apiStackProps.vpcLink())
                                 .connectionType(ConnectionType.VPC_LINK)
+                                .requestParameters(productsIntegrationParams)
                                 .build())
-                        .build())
+                        .build()),
+                MethodOptions.builder()
+                        .requestParameters(productsMethodParams)
+                        .build()
 
         );
         // POST /products
@@ -77,16 +88,24 @@ public class ApiStack extends Stack {
                                 ":8080/api/products")
                         .options(IntegrationOptions.builder()
                                 .vpcLink(apiStackProps.vpcLink())
+                                .requestParameters(productsIntegrationParams)
                                 .connectionType(ConnectionType.VPC_LINK)
                                 .build())
-                        .build()));
+                        .build()),
+                MethodOptions.builder()
+                        .requestParameters(productsMethodParams)
+                        .build()
+
+        );
 
         // PUT /products/{id}
         Map<String, String> productIdIntegrationParameters = new HashMap<>();
         productIdIntegrationParameters.put("integration.request.path.id", "method.request.path.id");
+        productIdIntegrationParameters.put("integration.request.path.id", "context.requestId");
 
         Map<String, Boolean> productIdMethodParameters = new HashMap<>();
         productIdMethodParameters.put("method.request.path.id", true);
+        productIdMethodParameters.put("method.request.header.requestId", false);
 
         Resource productIdResource = productsResource.addResource("{id}");
         productIdResource.addMethod("PUT", new Integration(

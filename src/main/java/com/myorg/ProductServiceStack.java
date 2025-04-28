@@ -77,7 +77,7 @@ public class ProductServiceStack extends Stack {
         );
         taskDefinition.addContainer("ProductServiceContainer",
                 ContainerDefinitionOptions.builder()
-                        .image(ContainerImage.fromEcrRepository(productStack.repository(), "2.0.0"))
+                        .image(ContainerImage.fromEcrRepository(productStack.repository(), "3.0.0"))
                         .containerName("productsService")
                         .portMappings(Collections.singletonList(PortMapping.builder()
                                         .containerPort(appPort)
