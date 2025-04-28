@@ -60,6 +60,13 @@ public class ECommerceEcsCdkApp {
         productService.addDependency(cluster);
         productService.addDependency(vpcStack);
 
+        ApiStack apiStack = new ApiStack(app, "Gateway", StackProps.builder()
+                .env(environment)
+                .tags(infraTags)
+                .build(), new ApiStackProps(nlb.getVpcLink(), nlb.getNlb()));
+
+        apiStack.addDependency(nlb);
+
         app.synth();
     }
 }
