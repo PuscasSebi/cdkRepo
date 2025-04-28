@@ -13,6 +13,7 @@ import software.amazon.awscdk.services.ecs.*;
 import software.amazon.awscdk.services.elasticloadbalancingv2.*;
 import software.amazon.awscdk.services.elasticloadbalancingv2.HealthCheck;
 import software.amazon.awscdk.services.elasticloadbalancingv2.Protocol;
+import software.amazon.awscdk.services.iam.ManagedPolicy;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.LogGroupProps;
 import software.amazon.awscdk.services.logs.RetentionDays;
@@ -68,21 +69,47 @@ public class ProductServiceStack extends Stack {
                 "SPRING_PROFILES_ACTIVE", "prod",
                 "AWS_PRODUCTSDB_NAME", productDb.getTableName(),
                 "AWS_REGION", this.getRegion(),
-                "SERVER_PORT", String.valueOf(appPort)
+                "SERVER_PORT", String.valueOf(appPort),
+                "AWS_XRAY_DAEMON_ADDRESS", "0.0.0.0:2000",
+                "AWS_XRAY_CONTEXT_MISSING", "IGNORE_ERROR",
+                "AWS_XRAY_TRACING_NAME", "productservice"
         );
         taskDefinition.addContainer("ProductServiceContainer",
                 ContainerDefinitionOptions.builder()
-                        .image(ContainerImage.fromEcrRepository(productStack.repository(), "1.0.3"))
+                        .image(ContainerImage.fromEcrRepository(productStack.repository(), "2.0.0"))
                         .containerName("productsService")
                         .portMappings(Collections.singletonList(PortMapping.builder()
                                         .containerPort(appPort)
                                         .protocol(software.amazon.awscdk.services.ecs.Protocol.TCP)
                                 .build()))
                         .logging(logDriver)
+                        .cpu(384)
+                        .memoryLimitMiB(896)
                         .environment(environment)
                         .build());
 
 
+        taskDefinition.addContainer("Xray", ContainerDefinitionOptions.builder()
+                        .image(ContainerImage.fromRegistry("public.ecr.aws/xray/aws-xray-daemon:latest"))
+                        .containerName("XrayProductsService")
+                        .portMappings(Collections.singletonList(PortMapping.builder()
+                                        .containerPort(2000)
+                                        .protocol(software.amazon.awscdk.services.ecs.Protocol.UDP)
+                                .build()))
+                        .logging(new AwsLogDriver(AwsLogDriverProps.builder()
+                                .logGroup(new LogGroup(this, "xRayLogGroup",
+                                        LogGroupProps.builder()
+                                        .logGroupName("XrayProductService")
+                                        .removalPolicy(RemovalPolicy.DESTROY)
+                                        .retention(RetentionDays.FIVE_DAYS)
+                                        .build()))
+                                .streamPrefix("XRayProductService")
+                                .build()))
+                        .cpu(128)
+                        .cpu(128)
+                .build());
+
+        taskDefinition.getTaskRole().addManagedPolicy(ManagedPolicy.fromAwsManagedPolicyName("AWSXRayWriteOnlyAccess"));
         ApplicationListener applicationListener = productStack.applicationLoadBalancer()
                 .addListener("ApplicationListener", ApplicationListenerProps.builder()
                         .port(appPort)
