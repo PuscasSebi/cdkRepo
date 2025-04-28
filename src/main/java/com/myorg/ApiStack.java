@@ -54,7 +54,7 @@ public class ApiStack extends Stack {
 
     private void createProductResource(RestApi restApi, ApiStackProps apiStackProps){
         Map<String,String> productsIntegrationParams = new HashMap<>();
-        productsIntegrationParams.put("integration.request.path.id", "context.requestId");
+        productsIntegrationParams.put("integration.request.header.requestId", "context.requestId");
 
         Map<String, Boolean> productsMethodParams = new HashMap<>();
         productsMethodParams.put("method.request.header.requestId", false);
@@ -101,11 +101,12 @@ public class ApiStack extends Stack {
         // PUT /products/{id}
         Map<String, String> productIdIntegrationParameters = new HashMap<>();
         productIdIntegrationParameters.put("integration.request.path.id", "method.request.path.id");
-        productIdIntegrationParameters.put("integration.request.path.id", "context.requestId");
+        productsIntegrationParams.put("integration.request.header.requestId", "context.requestId");
 
         Map<String, Boolean> productIdMethodParameters = new HashMap<>();
         productIdMethodParameters.put("method.request.path.id", true);
-        productIdMethodParameters.put("method.request.header.requestId", false);
+        productsMethodParams.put("method.request.header.requestId", false);
+
 
         Resource productIdResource = productsResource.addResource("{id}");
         productIdResource.addMethod("PUT", new Integration(
