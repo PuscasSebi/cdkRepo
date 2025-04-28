@@ -4,6 +4,7 @@ import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
+import software.amazon.awscdk.services.dynamodb.*;
 import software.amazon.awscdk.services.ec2.Peer;
 import software.amazon.awscdk.services.ec2.Port;
 import software.amazon.awscdk.services.ec2.Vpc;
@@ -27,6 +28,22 @@ public class ProductServiceStack extends Stack {
                                ProductServiceStackProps productStack) {
         super(scope, id, props);
 
+        Table productDb = new Table(this,"productsDbd",
+                TableProps.builder()
+                        .partitionKey(Attribute.builder()
+                                .name("id")
+                                .type(AttributeType.STRING)
+                                .build())
+                        .tableName("products")
+                        .removalPolicy(RemovalPolicy.DESTROY)
+                        .billingMode(BillingMode.PROVISIONED)
+                        .readCapacity(1)
+                        .writeCapacity(1)
+                        .build()
+                ); //won't be charged until usage
+
+
+
         FargateTaskDefinition taskDefinition = new FargateTaskDefinition(this,
                 "FargateTaskDefinition",
                 FargateTaskDefinitionProps.builder()
@@ -35,6 +52,9 @@ public class ProductServiceStack extends Stack {
                         .memoryLimitMiB(1024)
                         .build()
         );
+
+        productDb.grantReadWriteData(taskDefinition.getTaskRole());
+
         AwsLogDriver logDriver = new AwsLogDriver(AwsLogDriverProps.builder()
                 .logGroup(new LogGroup(this, "LogGroup", LogGroupProps.builder()
                         .logGroupName("ProductService")
@@ -46,6 +66,8 @@ public class ProductServiceStack extends Stack {
         Integer appPort = 8080;
         Map<String,String> environment = Map.of(
                 "SPRING_PROFILES_ACTIVE", "prod",
+                "AWS_PRODUCTSDB_NAME", productDb.getTableName(),
+                "AWS_REGION", this.getRegion(),
                 "SERVER_PORT", String.valueOf(appPort)
         );
         taskDefinition.addContainer("ProductServiceContainer",
