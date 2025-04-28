@@ -83,11 +83,13 @@ public class ProductServiceStack extends Stack {
                 "AWS_XRAY_DAEMON_ADDRESS", "0.0.0.0:2000",
                 "AWS_XRAY_CONTEXT_MISSING", "IGNORE_ERROR",
                 "AWS_XRAY_TRACING_NAME", "productservice",
-                "LOGGING_LEVEL_ROOT", "INFO"
+                "LOGGING_LEVEL_ROOT", "INFO",
+                "ORG_APACHE_HTTP_WIRE", "TRACE"
+                //org.apache.http.wire"
         );
         taskDefinition.addContainer("ProductServiceContainer",
                 ContainerDefinitionOptions.builder()
-                        .image(ContainerImage.fromEcrRepository(productStack.repository(), "4.0.1"))
+                        .image(ContainerImage.fromEcrRepository(productStack.repository(), "7.0.0"))
                         .containerName("productsService")
                         .portMappings(Collections.singletonList(PortMapping.builder()
                                         .containerPort(appPort)
