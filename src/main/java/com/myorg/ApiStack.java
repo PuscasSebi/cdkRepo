@@ -59,6 +59,7 @@ public class ApiStack extends Stack {
 
         Map<String, Boolean> productsMethodParams = new HashMap<>();
         productsMethodParams.put("method.request.header.requestId", false);
+        productsMethodParams.put("method.request.query.code", false);
 
         //products
         Resource productsResource = restApi.getRoot().addResource("products");
