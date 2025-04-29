@@ -14,6 +14,8 @@ public class EcrStack extends Stack {
 
     @Getter
     private final Repository productServiceRepository;
+    @Getter
+    private final Repository auditServiceRepository;
 
     public EcrStack(Construct scope, String id, StackProps props) {
         super(scope, id, props);
@@ -24,6 +26,14 @@ public class EcrStack extends Stack {
                 .imageTagMutability(TagMutability.IMMUTABLE)
                 .emptyOnDelete(true)
                 .build());
+
+        auditServiceRepository =
+                new Repository(this, "AuditService", RepositoryProps.builder()
+                        .repositoryName("auditservice")
+                        .removalPolicy(RemovalPolicy.DESTROY)
+                        .imageTagMutability(TagMutability.IMMUTABLE)
+                        .emptyOnDelete(true)
+                        .build());
     }
 
 }

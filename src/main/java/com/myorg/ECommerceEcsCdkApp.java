@@ -60,6 +60,24 @@ public class ECommerceEcsCdkApp {
         productService.addDependency(cluster);
         productService.addDependency(vpcStack);
 
+
+
+        Map<String,String> infraTagsServiceAudit = new HashMap<>();
+        infraTags.put("team", "Puscas");
+        infraTags.put("cost", "AuditService");
+
+        AuditServiceStack auditServiceStack = new AuditServiceStack(app, "AuditSService", StackProps.builder()
+                .env(environment)
+                .tags(infraTagsServiceAudit)
+                .build(),
+                new AuditServiceProps(vpcStack.getVps(), cluster.getCluster(), nlb.getNlb(), nlb.getAlb(),
+                        ecr.getAuditServiceRepository(), productService.getProductEventsTopic()));
+        auditServiceStack.addDependency(ecr);
+        auditServiceStack.addDependency(nlb);
+        auditServiceStack.addDependency(cluster);
+        auditServiceStack.addDependency(vpcStack);
+
+
         ApiStack apiStack = new ApiStack(app, "Gateway", StackProps.builder()
                 .env(environment)
                 .tags(infraTags)
