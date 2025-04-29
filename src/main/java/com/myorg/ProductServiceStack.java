@@ -1,5 +1,6 @@
 package com.myorg;
 
+import lombok.Getter;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
@@ -17,6 +18,10 @@ import software.amazon.awscdk.services.iam.ManagedPolicy;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.LogGroupProps;
 import software.amazon.awscdk.services.logs.RetentionDays;
+import software.amazon.awscdk.services.sns.Topic;
+import software.amazon.awscdk.services.sns.TopicProps;
+import software.amazon.awscdk.services.sns.subscriptions.EmailSubscription;
+import software.amazon.awscdk.services.sns.subscriptions.EmailSubscriptionProps;
 import software.constructs.Construct;
 
 import java.util.Collections;
@@ -25,9 +30,23 @@ import java.util.Objects;
 
 public class ProductServiceStack extends Stack {
 
+    @Getter
+    private final Topic productEventsTopic;
+
     public ProductServiceStack(Construct scope, String id, StackProps props,
                                ProductServiceStackProps productStack) {
         super(scope, id, props);
+
+        productEventsTopic = new Topic(this, "ProductEventsTopic", TopicProps.builder()
+                .displayName("Product events topic")
+                .topicName("product-events")
+                .build());
+
+        //for testing only remove prod
+        productEventsTopic.addSubscription(new EmailSubscription("puscas.sebastian@gmail.com",
+                EmailSubscriptionProps.builder()
+                        .json(true).build()
+                ));
 
         Table productDb = new Table(this,"productsDbd",
                 TableProps.builder()
@@ -65,6 +84,7 @@ public class ProductServiceStack extends Stack {
         );
 
         productDb.grantReadWriteData(taskDefinition.getTaskRole());
+        productEventsTopic.grantPublish(taskDefinition.getTaskRole());
 
         AwsLogDriver logDriver = new AwsLogDriver(AwsLogDriverProps.builder()
                 .logGroup(new LogGroup(this, "LogGroup", LogGroupProps.builder()
@@ -80,6 +100,7 @@ public class ProductServiceStack extends Stack {
                 "AWS_PRODUCTSDB_NAME", productDb.getTableName(),
                 "AWS_REGION", this.getRegion(),
                 "SERVER_PORT", String.valueOf(appPort),
+                "AWS_SNS_TOPIC_PRODUCT_EVENTS", this.productEventsTopic.getTopicArn(),
                 "AWS_XRAY_DAEMON_ADDRESS", "0.0.0.0:2000",
                 "AWS_XRAY_CONTEXT_MISSING", "IGNORE_ERROR",
                 "AWS_XRAY_TRACING_NAME", "productservice",
