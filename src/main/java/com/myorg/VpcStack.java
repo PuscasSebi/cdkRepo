@@ -1,6 +1,5 @@
 package com.myorg;
 
-import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.ec2.Vpc;
