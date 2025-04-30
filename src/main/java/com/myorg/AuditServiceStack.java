@@ -4,6 +4,7 @@ import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
+import software.amazon.awscdk.services.dynamodb.*;
 import software.amazon.awscdk.services.ec2.Peer;
 import software.amazon.awscdk.services.ec2.Port;
 import software.amazon.awscdk.services.ec2.Vpc;
@@ -33,6 +34,25 @@ public class AuditServiceStack extends Stack {
     public AuditServiceStack(final Construct scope, final String id,
                              final StackProps props, AuditServiceProps auditServiceProps) {
         super(scope, id, props);
+
+        Table eventsDb = new Table(this, "EventsDb",
+                TableProps.builder()
+                        .tableName("events")
+                        .removalPolicy(RemovalPolicy.DESTROY)
+                        .partitionKey(Attribute.builder()
+                                .name("pk")
+                                .type(AttributeType.STRING)
+                                .build())
+                        .sortKey(Attribute.builder()
+                                .name("sk")
+                                .type(AttributeType.STRING)
+                                .build())
+                        .timeToLiveAttribute("ttl")
+                        .billingMode(BillingMode.PROVISIONED)
+                        .readCapacity(1)
+                        .writeCapacity(1)
+                        .build()
+                );
 
         Queue dlq = new Queue(this, "productEventsDLQ",
                 QueueProps.builder()
@@ -116,13 +136,14 @@ public class AuditServiceStack extends Stack {
         envVariables.put("AWS_XRAY_DAEMON_ADDRESS", "0.0.0.0:2000");
         envVariables.put("AWS_XRAY_CONTEXT_MISSING", "IGNORE_ERROR");
         envVariables.put("AWS_XRAY_TRACING_NAME", "auditservice");
+        envVariables.put("AWS_EVENTS_DB", eventsDb.getTableName());
         envVariables.put("AWS_SQS_QUEUE_PRODUCT_EVENTS_URL", productEventsQueue.getQueueUrl());
         envVariables.put("AWS_SQS_QUEUE_PRODUCT_FAILURE_EVENTS_URL", productFailedEventsQueue.getQueueUrl());
         envVariables.put("LOGGING_LEVEL_ROOT", "INFO");
 
         fargateTaskDefinition.addContainer("AuditServiceContainer",
                 ContainerDefinitionOptions.builder()
-                        .image(ContainerImage.fromEcrRepository(auditServiceProps.repository(), "3.0.0"))
+                        .image(ContainerImage.fromEcrRepository(auditServiceProps.repository(), "4.0.1"))
                         .containerName("auditService")
                         .logging(logDriver)
                         .portMappings(Collections.singletonList(PortMapping.builder()
@@ -155,6 +176,7 @@ public class AuditServiceStack extends Stack {
 
         productEventsQueue.grantConsumeMessages(fargateTaskDefinition.getTaskRole());
         productFailedEventsQueue.grantConsumeMessages(fargateTaskDefinition.getTaskRole());
+        eventsDb.grantReadWriteData(fargateTaskDefinition.getTaskRole());
 
         ApplicationListener applicationListener = auditServiceProps.applicationLoadBalancer()
                 .addListener("AuditServiceAlbListener", ApplicationListenerProps.builder()
