@@ -49,9 +49,9 @@ public class AuditServiceStack extends Stack {
                                 .type(AttributeType.STRING)
                                 .build())
                         .timeToLiveAttribute("ttl")
-                        .billingMode(BillingMode.PROVISIONED)
-                        .readCapacity(1)
-                        .writeCapacity(1)
+                        .billingMode(BillingMode.PAY_PER_REQUEST)
+                      /*  .readCapacity(1)
+                        .writeCapacity(1)*/
                         .build()
                 );
 
