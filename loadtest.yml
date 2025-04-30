@@ -1,0 +1,18 @@
+config:
+  phases:
+    - duration: 300
+      arrivalRate: 25
+  http:
+    timeout: 29
+scenarios:
+  - flow:
+      - post:
+          url: /products
+          json:
+            name: "{{ $randomString() }}"
+            code: "{{ $randomString() }}"
+            model: "{{ $randomString() }}"
+            price: 20.0
+
+
+            # run it: artillery run -t  https://ir8mpnumg3.execute-api.eu-central-1.amazonaws.com/prod/ loadtest.yml
