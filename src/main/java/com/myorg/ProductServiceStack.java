@@ -75,6 +75,38 @@ public class ProductServiceStack extends Stack {
                 .build());
 
 
+        IScalableTableAttribute readScale = productDb.autoScaleReadCapacity(software.amazon.awscdk.services.dynamodb.EnableScalingProps.builder()
+                .maxCapacity(4)
+                .minCapacity(1)
+                .build());
+        readScale.scaleOnUtilization(UtilizationScalingProps.builder()
+                        .targetUtilizationPercent(50)
+                        .scaleInCooldown(Duration.seconds(20))
+                        .scaleOutCooldown(Duration.seconds(20))
+                .build());
+        IScalableTableAttribute writeScale = productDb.autoScaleWriteCapacity(software.amazon.awscdk.services.dynamodb.EnableScalingProps.builder()
+                .minCapacity(1)
+                .maxCapacity(4)
+                .build());
+
+        writeScale.scaleOnUtilization(UtilizationScalingProps.builder()
+                .targetUtilizationPercent(50)
+                .scaleInCooldown(Duration.seconds(20))
+                .scaleOutCooldown(Duration.seconds(20))
+                .build());
+
+        IScalableTableAttribute readScaleIndex = productDb.autoScaleGlobalSecondaryIndexReadCapacity("codeIdx",
+                software.amazon.awscdk.services.dynamodb.EnableScalingProps.builder()
+                        .maxCapacity(4)
+                        .minCapacity(1)
+                        .build());
+
+        readScaleIndex.scaleOnUtilization(UtilizationScalingProps.builder()
+                .targetUtilizationPercent(50)
+                .scaleInCooldown(Duration.seconds(20))
+                .scaleOutCooldown(Duration.seconds(20))
+                .build());
+
         FargateTaskDefinition taskDefinition = new FargateTaskDefinition(this,
                 "FargateTaskDefinition",
                 FargateTaskDefinitionProps.builder()
