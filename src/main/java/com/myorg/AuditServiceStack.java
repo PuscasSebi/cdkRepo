@@ -5,6 +5,7 @@ import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.applicationautoscaling.EnableScalingProps;
+import software.amazon.awscdk.services.cloudwatch.*;
 import software.amazon.awscdk.services.dynamodb.*;
 import software.amazon.awscdk.services.ec2.Peer;
 import software.amazon.awscdk.services.ec2.Port;
@@ -49,11 +50,34 @@ public class AuditServiceStack extends Stack {
                                 .type(AttributeType.STRING)
                                 .build())
                         .timeToLiveAttribute("ttl")
-                        .billingMode(BillingMode.PAY_PER_REQUEST)
-                      /*  .readCapacity(1)
-                        .writeCapacity(1)*/
+                        .billingMode(BillingMode.PROVISIONED)
+                        .readCapacity(1)
+                        .writeCapacity(1)
                         .build()
                 );
+
+        //metric
+        MetricOptions average = MetricOptions.builder()
+                .statistic("Average")
+                .period(Duration.minutes(5))
+                .unit(Unit.COUNT)
+                .build();
+        Metric writeThrottlerEvents = eventsDb.metric("WriteThrottlerEvents",
+                average);
+        ;
+
+        //alarm
+        writeThrottlerEvents.createAlarm(this, "WriteThrottlerEventsAlarm",
+                CreateAlarmOptions.builder().alarmName("WriteThrottlerEventsAlarm")
+                        .alarmDescription("write throttler events alarm")
+                        .actionsEnabled(false)
+                        .evaluationPeriods(1)
+                        .threshold(15)//for testing trigger only
+                        .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
+                        .treatMissingData(TreatMissingData.NOT_BREACHING)
+                        .build()
+                );
+
 
         Queue dlq = new Queue(this, "productEventsDLQ",
                 QueueProps.builder()

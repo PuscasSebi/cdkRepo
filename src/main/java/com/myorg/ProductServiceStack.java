@@ -6,6 +6,8 @@ import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.applicationautoscaling.EnableScalingProps;
+import software.amazon.awscdk.services.cloudwatch.*;
+import software.amazon.awscdk.services.cloudwatch.actions.SnsAction;
 import software.amazon.awscdk.services.dynamodb.*;
 import software.amazon.awscdk.services.ec2.Peer;
 import software.amazon.awscdk.services.ec2.Port;
@@ -16,9 +18,7 @@ import software.amazon.awscdk.services.elasticloadbalancingv2.*;
 import software.amazon.awscdk.services.elasticloadbalancingv2.HealthCheck;
 import software.amazon.awscdk.services.elasticloadbalancingv2.Protocol;
 import software.amazon.awscdk.services.iam.ManagedPolicy;
-import software.amazon.awscdk.services.logs.LogGroup;
-import software.amazon.awscdk.services.logs.LogGroupProps;
-import software.amazon.awscdk.services.logs.RetentionDays;
+import software.amazon.awscdk.services.logs.*;
 import software.amazon.awscdk.services.sns.Topic;
 import software.amazon.awscdk.services.sns.TopicProps;
 import software.amazon.awscdk.services.sns.subscriptions.EmailSubscription;
@@ -119,15 +119,54 @@ public class ProductServiceStack extends Stack {
         productDb.grantReadWriteData(taskDefinition.getTaskRole());
         productEventsTopic.grantPublish(taskDefinition.getTaskRole());
 
+        LogGroup logGroup = new LogGroup(this, "LogGroup", LogGroupProps.builder()
+                .logGroupName("ProductService")
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .retention(RetentionDays.FIVE_DAYS)
+                .build());
+
         AwsLogDriver logDriver = new AwsLogDriver(AwsLogDriverProps.builder()
-                .logGroup(new LogGroup(this, "LogGroup", LogGroupProps.builder()
-                        .logGroupName("ProductService")
-                        .removalPolicy(RemovalPolicy.DESTROY)
-                        .retention(RetentionDays.FIVE_DAYS)
-                        .build()))
+                .logGroup(logGroup)
                 .streamPrefix("ProductService")
                 .build());
         Integer appPort = 8080;
+
+        //Metric
+        MetricFilter metricFilter = logGroup.addMetricFilter("MetricFilter", MetricFilterProps.builder()
+                .filterPattern(FilterPattern.literal("cannot create a product with same code"))
+                .metricNamespace("Product")
+                .metricName("ProductWithSameCodeService")
+                .build());
+        //Alarm
+        Alarm productNotFoundAlarm = metricFilter.metric()
+                .with(MetricOptions.builder()
+                        .period(Duration.minutes(2))
+                        .statistic("sum")
+                        .build())
+                .createAlarm(this, "ProductWithSameCodeAlarm",
+                        CreateAlarmOptions.builder()
+                                .alarmName("productWithSameCodeAlarm")
+                                .alarmDescription("Some product was not created due code duplicity")
+                                .evaluationPeriods(1)
+                                .threshold(2)
+                                .actionsEnabled(true)
+                                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                                .build());
+
+        //Action
+        Topic productAlarmTopic = new Topic(this, "ProductAlarmTopic", TopicProps.builder()
+                .displayName("Product alarm topic")
+                .topicName("product-alarm")
+                .build());
+
+        productAlarmTopic.addSubscription(new EmailSubscription("puscas.sebastian@gmail.com",
+                EmailSubscriptionProps.builder()
+                        .json(false).build()
+                ));
+
+        productNotFoundAlarm.addAlarmAction(new SnsAction(productAlarmTopic));
+
         Map<String,String> environment = Map.of(
                 "SPRING_PROFILES_ACTIVE", "prod",
                 "AWS_PRODUCTSDB_NAME", productDb.getTableName(),
