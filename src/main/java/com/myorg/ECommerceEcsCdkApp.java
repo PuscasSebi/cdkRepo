@@ -85,6 +85,21 @@ public class ECommerceEcsCdkApp {
 
         apiStack.addDependency(nlb);
 
+        Map<String,String> infraTagsServiceInvoices = new HashMap<>();
+        infraTags.put("team", "Puscas");
+        infraTags.put("cost", "InvoiceService");
+
+        InvoicesServiceStack invoiceServiceStack = new InvoicesServiceStack(app, "invoiceSService", StackProps.builder()
+                .env(environment)
+                .tags(infraTagsServiceInvoices)
+                .build(),
+                new InvoicesServiceProps(vpcStack.getVps(), cluster.getCluster(), nlb.getNlb(), nlb.getAlb(),
+                        ecr.getInvoicesServiceRepository()));
+        invoiceServiceStack.addDependency(ecr);
+        invoiceServiceStack.addDependency(nlb);
+        invoiceServiceStack.addDependency(cluster);
+        invoiceServiceStack.addDependency(vpcStack);
+
         app.synth();
     }
 }

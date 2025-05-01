@@ -1,5 +1,6 @@
 package com.myorg;
 
+import org.jetbrains.annotations.NotNull;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
@@ -48,13 +49,158 @@ public class ApiStack extends Stack {
                                 ))
                                 .build())
                         .build());
-        this.createProductResource(restApi, apiStackProps);
+        Resource productResource = this.createProductResource(restApi, apiStackProps);
+        createdProductEventsResource(restApi, apiStackProps, productResource);
+
+        createInvoicesResource(restApi, apiStackProps);
+    }
+
+    private void createdProductEventsResource(RestApi restApi,
+                                              ApiStackProps apiStackProps,
+                                              Resource productResource) {
+        //product/resource
+        Resource productEventsResource = productResource.addResource("events");
+
+        Map<String, String> productsEventsIntegrationParams = new HashMap<>();
+        productsEventsIntegrationParams.put("integration.request.header.requestId", "context.requestId");
+
+
+        Map<String, Boolean> productEventsMethodParams = new HashMap<>();
+        productEventsMethodParams.put("method.request.header.requestId", false);
+        productEventsMethodParams.put("method.request.querystring.eventType", false);
+        productEventsMethodParams.put("method.request.querystring.limit", false);
+        productEventsMethodParams.put("method.request.querystring.from", false);
+        productEventsMethodParams.put("method.request.querystring.to", false);
+        productEventsMethodParams.put("method.request.querystring.exclusiveStartTimestamp", false);
+
+        //GET /products/events?eventType=PRODUCT_CREATED&limit=10&from=5&to=15&exclusiveStartTimestamp=123
+        productEventsResource.addMethod("GET", new Integration(
+                        IntegrationProps.builder()
+                                .type(IntegrationType.HTTP_PROXY)
+                                .integrationHttpMethod("GET")
+                                .uri("http://" + apiStackProps.networkLoadBalancer().getLoadBalancerDnsName() +
+                                        ":9090/api/products/events")
+                                .options(IntegrationOptions.builder()
+                                        .vpcLink(apiStackProps.vpcLink())
+                                        .connectionType(ConnectionType.VPC_LINK)
+                                        .requestParameters(productsEventsIntegrationParams)
+                                        .build())
+                                .build()),
+                MethodOptions.builder()
+                        .requestValidator(new RequestValidator(this, "ProductEventsValidator",
+                                RequestValidatorProps.builder()
+                                        .restApi(restApi)
+                                        .requestValidatorName("productEventsValidator")
+                                        .validateRequestParameters(true)
+                                        .build()
+                        ))
+                        .requestParameters(productEventsMethodParams)
+                        .build()
+
+        );
+
+    }
+
+    private void createInvoicesResource(RestApi restApi, ApiStackProps apiStackProps) {
+        Resource invoicesResource = restApi.getRoot().addResource("invoices");
+        Map<String, String> invoicesIntegrationParams = new HashMap<>();
+        invoicesIntegrationParams.put("integration.request.header.requestId", "context.requestId");
+
+        Map<String, Boolean> invoicesMethodParams = new HashMap<>();
+        invoicesMethodParams.put("method.request.header.requestId", false);
+
+        //Post /invoices - create presign url
+        invoicesResource.addMethod("POST", new Integration(IntegrationProps.builder()
+                .type(IntegrationType.HTTP_PROXY)
+                .integrationHttpMethod("POST")
+                .uri("http://" + apiStackProps.networkLoadBalancer().getLoadBalancerDnsName() +
+                        ":9095/api/invoices")
+                .options(IntegrationOptions.builder()
+                        .vpcLink(apiStackProps.vpcLink())
+                        .connectionType(ConnectionType.VPC_LINK)
+                        .requestParameters(invoicesIntegrationParams)
+                        .build())
+                .build()), MethodOptions.builder()
+                .requestValidator(new RequestValidator(this, "InvoiceValidator2",
+                        RequestValidatorProps.builder()
+                                .restApi(restApi)
+                                .requestValidatorName("InvoicesValidator2")
+                                .validateRequestParameters(true)
+                                .build()
+                ))
+                .requestParameters(invoicesMethodParams)
+                .build());
+
+        //GET /api/invoices/transactions/{fileTransactionId}
+        Map<String, String> invoicesFileIntegrationParams = new HashMap<>();
+        invoicesFileIntegrationParams.put("integration.request.header.requestId", "context.requestId");
+        invoicesFileIntegrationParams.put("integration.request.path.fileTransactionId", "method.request.path.fileTransactionId");
+
+        Map<String, Boolean> invoicesFileMethodParams = new HashMap<>();
+        invoicesFileMethodParams.put("method.request.header.requestId", false);
+        invoicesFileMethodParams.put("method.request.path.fileTransactionId", true);
+
+
+        Resource invoiceTransactionsResource = invoicesResource.addResource("transactions");
+        Resource fileTransactionId = invoiceTransactionsResource.addResource("{fileTransactionId}");
+
+        fileTransactionId.addMethod("GET", new Integration(IntegrationProps.builder()
+                        .type(IntegrationType.HTTP_PROXY)
+                        .integrationHttpMethod("GET")
+                        .uri("http://" + apiStackProps.networkLoadBalancer().getLoadBalancerDnsName() +
+                                ":9095/api/invoices/transactions/{fileTransactionId}")
+                        .options(IntegrationOptions.builder()
+                                .vpcLink(apiStackProps.vpcLink())
+                                .connectionType(ConnectionType.VPC_LINK)
+                                .requestParameters(invoicesFileIntegrationParams)
+                                .build())
+                        .build()),
+                MethodOptions.builder()
+                        .requestValidator(new RequestValidator(this, "InvoiceTransactionValidator",
+                                RequestValidatorProps.builder()
+                                        .restApi(restApi)
+                                        .requestValidatorName("InvoiceTransactionValidator")
+                                        .validateRequestParameters(true)
+                                        .build()
+                        ))
+                        .requestParameters(invoicesFileMethodParams)
+                        .build()
+        );
+
+        //GEt /invoices?email=puscas@gmail.com
+
+        Map<String, Boolean> invoicesEmailMethodParams = new HashMap<>();
+        invoicesEmailMethodParams.put("method.request.header.requestId", false);
+        invoicesEmailMethodParams.put("method.request.querystring.email", false);
+
+        //Post /invoices - create presign url
+        invoicesResource.addMethod("GET", new Integration(IntegrationProps.builder()
+                .type(IntegrationType.HTTP_PROXY)
+                .integrationHttpMethod("GET")
+                .uri("http://" + apiStackProps.networkLoadBalancer().getLoadBalancerDnsName() +
+                        ":9095/api/invoices")
+                .options(IntegrationOptions.builder()
+                        .vpcLink(apiStackProps.vpcLink())
+                        .connectionType(ConnectionType.VPC_LINK)
+                        .requestParameters(invoicesIntegrationParams)
+                        .build())
+                .build()), MethodOptions.builder()
+                .requestValidator(new RequestValidator(this, "EmailInvoiceValidatorEmail",
+                        RequestValidatorProps.builder()
+                                .restApi(restApi)
+                                .requestValidatorName("EmailInvoiceValidatorEmail")
+                                .validateRequestParameters(true)
+                                .build()
+
+                ))
+                .requestParameters(invoicesEmailMethodParams)
+                .build());
 
 
     }
 
-    private void createProductResource(RestApi restApi, ApiStackProps apiStackProps){
-        Map<String,String> productsIntegrationParams = new HashMap<>();
+    private Resource createProductResource(RestApi restApi, ApiStackProps apiStackProps) {
+        Map<String, String> productsIntegrationParams = new HashMap<>();
         productsIntegrationParams.put("integration.request.header.requestId", "context.requestId");
 
         Map<String, Boolean> productsMethodParams = new HashMap<>();
@@ -66,16 +212,16 @@ public class ApiStack extends Stack {
 
         //GET /products
         productsResource.addMethod("GET", new Integration(
-                IntegrationProps.builder()
-                        .type(IntegrationType.HTTP_PROXY)
-                        .integrationHttpMethod("GET")
-                        .uri("http://"+ apiStackProps.networkLoadBalancer().getLoadBalancerDnsName()+":8080/api/products")
-                        .options(IntegrationOptions.builder()
-                                .vpcLink(apiStackProps.vpcLink())
-                                .connectionType(ConnectionType.VPC_LINK)
-                                .requestParameters(productsIntegrationParams)
-                                .build())
-                        .build()),
+                        IntegrationProps.builder()
+                                .type(IntegrationType.HTTP_PROXY)
+                                .integrationHttpMethod("GET")
+                                .uri("http://" + apiStackProps.networkLoadBalancer().getLoadBalancerDnsName() + ":8080/api/products")
+                                .options(IntegrationOptions.builder()
+                                        .vpcLink(apiStackProps.vpcLink())
+                                        .connectionType(ConnectionType.VPC_LINK)
+                                        .requestParameters(productsIntegrationParams)
+                                        .build())
+                                .build()),
                 MethodOptions.builder()
                         .requestParameters(productsMethodParams)
                         .build()
@@ -129,17 +275,17 @@ public class ApiStack extends Stack {
 
         // POST /products
         productsResource.addMethod("POST", new Integration(
-                IntegrationProps.builder()
-                        .type(IntegrationType.HTTP_PROXY)
-                        .integrationHttpMethod("POST")
-                        .uri("http://" + apiStackProps.networkLoadBalancer().getLoadBalancerDnsName() +
-                                ":8080/api/products")
-                        .options(IntegrationOptions.builder()
-                                .vpcLink(apiStackProps.vpcLink())
-                                .requestParameters(productsIntegrationParams)
-                                .connectionType(ConnectionType.VPC_LINK)
-                                .build())
-                        .build()),
+                        IntegrationProps.builder()
+                                .type(IntegrationType.HTTP_PROXY)
+                                .integrationHttpMethod("POST")
+                                .uri("http://" + apiStackProps.networkLoadBalancer().getLoadBalancerDnsName() +
+                                        ":8080/api/products")
+                                .options(IntegrationOptions.builder()
+                                        .vpcLink(apiStackProps.vpcLink())
+                                        .requestParameters(productsIntegrationParams)
+                                        .connectionType(ConnectionType.VPC_LINK)
+                                        .build())
+                                .build()),
                 MethodOptions.builder()
                         .requestParameters(productsMethodParams)
                         .requestValidator(productRequestValidator)
@@ -206,9 +352,11 @@ public class ApiStack extends Stack {
                 .requestParameters(productIdMethodParameters)
                 .build());
 
+        return productsResource;
     }
 
 }
 
 record ApiStackProps(VpcLink vpcLink,
-                     NetworkLoadBalancer networkLoadBalancer){}
+                     NetworkLoadBalancer networkLoadBalancer) {
+}

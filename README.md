@@ -16,3 +16,23 @@ It is a [Maven](https://maven.apache.org/) based project, so you can open this p
  * `cdk docs`        open CDK documentation
 
 Enjoy!
+
+
+CDK project to support product/audit/invoice services infrastructure
+everything is functional you just need npm cdk and aws keys
+
+invoice.png shows invoice service
+product_service.png shows product service
+
+There's also a whole infrastructure png to show the big picture
+
+
+please find all related repos here:
+https://github.com/PuscasSebi/invoicesservice
+https://github.com/PuscasSebi/auditservice
+https://github.com/PuscasSebi/productservice
+https://github.com/PuscasSebi/cdkRepo
+
+build images and publish to ECR created in EcrStack
+
+by default everything goes into eu-central-1 Frankfurt
