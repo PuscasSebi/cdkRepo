@@ -36,3 +36,8 @@ https://github.com/PuscasSebi/cdkRepo
 build images and publish to ECR created in EcrStack
 
 by default everything goes into eu-central-1 Frankfurt
+
+
+cdk destroy Vpc Cluster Nlb ProductService AuditSService Gateway invoiceSService
+
+do not destroy the Ecr if you ever plan on reusing the shit
