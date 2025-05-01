@@ -132,7 +132,7 @@ public class ProductServiceStack extends Stack {
         Integer appPort = 8080;
 
         //Metric
-        MetricFilter metricFilter = logGroup.addMetricFilter("MetricFilter", MetricFilterProps.builder()
+        MetricFilter metricFilter = logGroup.addMetricFilter("MetricFilter", MetricFilterOptions.builder()
                 .filterPattern(FilterPattern.literal("cannot create a product with same code"))
                 .metricNamespace("Product")
                 .metricName("ProductWithSameCodeService")
